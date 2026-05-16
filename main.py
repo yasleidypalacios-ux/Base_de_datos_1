@@ -65,7 +65,7 @@ def main():
     print("Tabla lista ✓")
 
     print(f"Insertando {TOTAL_RECORDS:,} registros en lotes de {BATCH_SIZE:,}...")
-    faker = Faker("es_MX")
+    faker = Faker("es_CO")
     inserted = 0
 
     with engine.begin() as conn:
