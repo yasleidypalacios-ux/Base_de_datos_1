@@ -4,10 +4,13 @@ from sqlalchemy import (
     create_engine, Column, Integer, String,
     Date, Float, Text, MetaData, Table
 )
+from faker import Faker
 
 load_dotenv()
 
 TABLE_NAME = "personas_yasleidy"
+BATCH_SIZE = 5000
+TOTAL_RECORDS = 100000
 
 def get_engine():
     user     = os.getenv("DB_USER")
@@ -32,7 +35,22 @@ def get_table(metadata):
         Column("telefono",         String(30),  nullable=False),
         Column("ocupacion",        String(100), nullable=False),
         Column("salario",          Float,       nullable=False),
+        
     )
+
+def generate_batch(faker, size):
+    batch = []
+    for _ in range(size):
+        batch.append({
+            "nombre":           faker.first_name(),
+            "correo":           faker.unique.email(),
+            "fecha_nacimiento": faker.date_of_birth(minimum_age=18, maximum_age=80),
+            "ciudad":           faker.city(),
+            "telefono":         faker.phone_number()[:30],
+            "ocupacion":        faker.job()[:100],
+            "salario":          round(faker.pyfloat(min_value=800, max_value=15000, right_digits=2), 2)   
+        })
+    return batch
 
 def main():
     print("Conectando a MySQL...")
@@ -40,11 +58,26 @@ def main():
     with engine.connect() as conn:
         print("Conexion exitosa ✓")
 
-    print("Creando tabla...")
+    print(f"Creando tabla '{TABLE_NAME}' si no existe...")
     metadata = MetaData()
     table = get_table(metadata)
     metadata.create_all(engine)
-    print(f"Tabla '{TABLE_NAME}' lista ✓")
+    print("Tabla lista ✓")
+
+    print(f"Insertando {TOTAL_RECORDS:,} registros en lotes de {BATCH_SIZE:,}...")
+    faker = Faker("es_MX")
+    inserted = 0
+
+    with engine.begin() as conn:
+        while inserted < TOTAL_RECORDS:
+            current_batch = min(BATCH_SIZE, TOTAL_RECORDS - inserted)
+            batch = generate_batch(faker, current_batch)
+            conn.execute(table.insert(), batch)
+            inserted += current_batch
+            pct = (inserted / TOTAL_RECORDS) * 100
+            print(f"  {inserted:>7,} / {TOTAL_RECORDS:,} ({pct:.1f}%)")
+
+    print("\n¡Insercion completada exitosamente!")
 
 if __name__ == "__main__":
     main()
