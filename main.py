@@ -48,7 +48,7 @@ def generate_batch(faker, size):
             "ciudad":           faker.city(),
             "telefono":         faker.phone_number()[:30],
             "ocupacion":        faker.job()[:100],
-            "salario":          round(faker.pyfloat(min_value=800, max_value=15000, right_digits=2), 2)   
+            "salario":          round(faker.pyfloat(min_value=400, max_value=15000, right_digits=2), 2)   
         })
     return batch
 
